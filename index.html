@@ -1,3 +1,603 @@
-<h1>raju</h1>
-<img src="lion.jpg">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premium Particle Heart</title>
 
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, #240015 0%, #090009 45%, #000 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .content {
+      position: fixed;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 20px;
+    }
+
+    .title {
+      color: white;
+      text-align: center;
+      font-size: clamp(25px, 5vw, 52px);
+      letter-spacing: 3px;
+      text-shadow:
+        0 0 10px #ff2b7a,
+        0 0 25px #ff2b7a,
+        0 0 50px #ff0066;
+      animation: titleGlow 2s ease-in-out infinite alternate;
+    }
+
+    .title span {
+      color: #ff4d91;
+    }
+
+    .message {
+      color: #ffc1d7;
+      font-size: clamp(14px, 3vw, 20px);
+      letter-spacing: 4px;
+      text-align: center;
+      text-shadow: 0 0 15px #ff4d91;
+      animation: fadeMessage 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes titleGlow {
+      from {
+        transform: scale(1);
+        opacity: 0.85;
+      }
+
+      to {
+        transform: scale(1.04);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeMessage {
+      from {
+        opacity: 0.45;
+      }
+
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <canvas id="heartCanvas"></canvas>
+
+  <div class="content">
+    <h1 class="title">
+      Particle <span>Heart</span>
+    </h1>
+
+    <p class="message">
+      MADE WITH LOVE ❤️
+    </p>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("heartCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let width = 0;
+    let height = 0;
+    let particles = [];
+    let stars = [];
+    let explosions = [];
+    let mouse = {
+      x: 0,
+      y: 0,
+      active: false
+    };
+
+    let time = 0;
+
+    const isMobile = window.innerWidth < 700;
+
+    const SETTINGS = {
+      particleCount: isMobile ? 1800 : 4500,
+      starCount: isMobile ? 90 : 180,
+      heartScale: isMobile ? 11 : 17
+    };
+
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+
+      canvas.style.width = width + "px";
+      canvas.style.height = height + "px";
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      createParticles();
+      createStars();
+    }
+
+    function heartPoint(t) {
+      const x = 16 * Math.pow(Math.sin(t), 3);
+
+      const y =
+        13 * Math.cos(t) -
+        5 * Math.cos(2 * t) -
+        2 * Math.cos(3 * t) -
+        Math.cos(4 * t);
+
+      return { x, y };
+    }
+
+    function createParticles() {
+      particles = [];
+
+      const centerX = width / 2;
+      const centerY = height / 2 + 25;
+
+      const baseScale =
+        Math.min(width, height) / SETTINGS.heartScale;
+
+      for (let i = 0; i < SETTINGS.particleCount; i++) {
+        const t = Math.random() * Math.PI * 2;
+        const point = heartPoint(t);
+
+        const fillAmount = Math.sqrt(Math.random());
+
+        const targetX =
+          centerX +
+          point.x *
+          baseScale *
+          fillAmount;
+
+        const targetY =
+          centerY -
+          point.y *
+          baseScale *
+          fillAmount;
+
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+
+          targetX,
+          targetY,
+
+          originalTargetX: targetX,
+          originalTargetY: targetY,
+
+          size: Math.random() * 2.1 + 0.4,
+          speed: Math.random() * 0.045 + 0.015,
+
+          angle: Math.random() * Math.PI * 2,
+          orbit: Math.random() * 4 + 1,
+
+          alpha: Math.random() * 0.7 + 0.3,
+
+          color: getPinkColor(),
+
+          delay: Math.random() * 140
+        });
+      }
+    }
+
+    function getPinkColor() {
+      const colors = [
+        "#ff0066",
+        "#ff2478",
+        "#ff4d91",
+        "#ff76aa",
+        "#ff9dc2",
+        "#ffd1e1",
+        "#ffffff"
+      ];
+
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function createStars() {
+      stars = [];
+
+      for (let i = 0; i < SETTINGS.starCount; i++) {
+        stars.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: Math.random() * 1.8 + 0.3,
+          speed: Math.random() * 0.25 + 0.05,
+          alpha: Math.random(),
+          twinkle: Math.random() * 0.05 + 0.01
+        });
+      }
+    }
+
+    function updateStars() {
+      stars.forEach((star) => {
+        star.y += star.speed;
+        star.alpha += star.twinkle;
+
+        if (star.alpha >= 1 || star.alpha <= 0.15) {
+          star.twinkle *= -1;
+        }
+
+        if (star.y > height) {
+          star.y = -5;
+          star.x = Math.random() * width;
+        }
+      });
+    }
+
+    function drawStars() {
+      stars.forEach((star) => {
+        ctx.beginPath();
+
+        ctx.fillStyle = `rgba(255, 190, 220, ${star.alpha})`;
+
+        ctx.shadowColor = "#ff4d91";
+        ctx.shadowBlur = 8;
+
+        ctx.arc(
+          star.x,
+          star.y,
+          star.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      });
+
+      ctx.shadowBlur = 0;
+    }
+
+    function updateParticles() {
+      const centerX = width / 2;
+      const centerY = height / 2 + 25;
+
+      const heartbeat =
+        1 +
+        Math.sin(time * 2.7) * 0.025 +
+        Math.max(0, Math.sin(time * 5.4)) * 0.025;
+
+      particles.forEach((particle, index) => {
+        particle.angle += 0.018;
+
+        const relativeX =
+          particle.originalTargetX - centerX;
+
+        const relativeY =
+          particle.originalTargetY - centerY;
+
+        let finalX =
+          centerX +
+          relativeX * heartbeat +
+          Math.cos(particle.angle) * particle.orbit;
+
+        let finalY =
+          centerY +
+          relativeY * heartbeat +
+          Math.sin(particle.angle) * particle.orbit;
+
+        if (mouse.active) {
+          const dx = mouse.x - particle.x;
+          const dy = mouse.y - particle.y;
+
+          const distance = Math.sqrt(dx * dx + dy * dy);
+
+          if (distance < 130) {
+            const force = (130 - distance) / 130;
+
+            finalX -= dx * force * 0.12;
+            finalY -= dy * force * 0.12;
+          }
+        }
+
+        const entrance =
+          Math.min(1, Math.max(0, (time * 70 - particle.delay) / 100));
+
+        particle.x +=
+          (finalX - particle.x) *
+          particle.speed *
+          entrance;
+
+        particle.y +=
+          (finalY - particle.y) *
+          particle.speed *
+          entrance;
+
+        particle.alpha =
+          0.5 +
+          Math.sin(time * 2 + index * 0.025) * 0.25;
+      });
+    }
+
+    function drawParticles() {
+      ctx.globalCompositeOperation = "lighter";
+
+      particles.forEach((particle) => {
+        ctx.beginPath();
+
+        ctx.fillStyle = particle.color;
+        ctx.globalAlpha = particle.alpha;
+
+        ctx.shadowColor = particle.color;
+        ctx.shadowBlur = particle.size * 7;
+
+        ctx.arc(
+          particle.x,
+          particle.y,
+          particle.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.shadowBlur = 0;
+    }
+
+    function createExplosion(x, y) {
+      const count = isMobile ? 30 : 60;
+
+      for (let i = 0; i < count; i++) {
+        const angle =
+          (Math.PI * 2 * i) / count +
+          Math.random() * 0.3;
+
+        const speed = Math.random() * 4 + 1;
+
+        explosions.push({
+          x,
+          y,
+
+          velocityX: Math.cos(angle) * speed,
+          velocityY: Math.sin(angle) * speed,
+
+          size: Math.random() * 2.5 + 0.5,
+          alpha: 1,
+          decay: Math.random() * 0.018 + 0.012,
+          color: getPinkColor()
+        });
+      }
+    }
+
+    function updateExplosions() {
+      for (let i = explosions.length - 1; i >= 0; i--) {
+        const spark = explosions[i];
+
+        spark.x += spark.velocityX;
+        spark.y += spark.velocityY;
+
+        spark.velocityX *= 0.98;
+        spark.velocityY *= 0.98;
+
+        spark.velocityY += 0.015;
+
+        spark.alpha -= spark.decay;
+
+        if (spark.alpha <= 0) {
+          explosions.splice(i, 1);
+        }
+      }
+    }
+
+    function drawExplosions() {
+      ctx.globalCompositeOperation = "lighter";
+
+      explosions.forEach((spark) => {
+        ctx.beginPath();
+
+        ctx.globalAlpha = spark.alpha;
+        ctx.fillStyle = spark.color;
+
+        ctx.shadowColor = spark.color;
+        ctx.shadowBlur = 12;
+
+        ctx.arc(
+          spark.x,
+          spark.y,
+          spark.size,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fill();
+      });
+
+      ctx.globalAlpha = 1;
+      ctx.globalCompositeOperation = "source-over";
+      ctx.shadowBlur = 0;
+    }
+
+    function drawHeartGlow() {
+      const centerX = width / 2;
+      const centerY = height / 2 + 30;
+
+      const glowSize =
+        Math.min(width, height) * 0.32;
+
+      const glow =
+        ctx.createRadialGradient(
+          centerX,
+          centerY,
+          0,
+          centerX,
+          centerY,
+          glowSize
+        );
+
+      glow.addColorStop(
+        0,
+        "rgba(255, 0, 102, 0.15)"
+      );
+
+      glow.addColorStop(
+        0.4,
+        "rgba(255, 0, 102, 0.07)"
+      );
+
+      glow.addColorStop(
+        1,
+        "rgba(255, 0, 102, 0)"
+      );
+
+      ctx.fillStyle = glow;
+
+      ctx.fillRect(
+        centerX - glowSize,
+        centerY - glowSize,
+        glowSize * 2,
+        glowSize * 2
+      );
+    }
+
+    function drawBackground() {
+      ctx.clearRect(0, 0, width, height);
+
+      const gradient =
+        ctx.createRadialGradient(
+          width / 2,
+          height / 2,
+          10,
+          width / 2,
+          height / 2,
+          Math.max(width, height)
+        );
+
+      gradient.addColorStop(
+        0,
+        "rgba(40, 0, 24, 0.35)"
+      );
+
+      gradient.addColorStop(
+        0.45,
+        "rgba(8, 0, 8, 0.5)"
+      );
+
+      gradient.addColorStop(
+        1,
+        "rgba(0, 0, 0, 1)"
+      );
+
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    function animate() {
+      time += 0.016;
+
+      drawBackground();
+      drawHeartGlow();
+
+      updateStars();
+      drawStars();
+
+      updateParticles();
+      drawParticles();
+
+      updateExplosions();
+      drawExplosions();
+
+      requestAnimationFrame(animate);
+    }
+
+    canvas.addEventListener("mousemove", (event) => {
+      mouse.x = event.clientX;
+      mouse.y = event.clientY;
+      mouse.active = true;
+    });
+
+    canvas.addEventListener("mouseleave", () => {
+      mouse.active = false;
+    });
+
+    canvas.addEventListener("click", (event) => {
+      createExplosion(
+        event.clientX,
+        event.clientY
+      );
+    });
+
+    canvas.addEventListener(
+      "touchstart",
+      (event) => {
+        const touch = event.touches[0];
+
+        if (!touch) return;
+
+        mouse.x = touch.clientX;
+        mouse.y = touch.clientY;
+        mouse.active = true;
+
+        createExplosion(
+          touch.clientX,
+          touch.clientY
+        );
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener(
+      "touchmove",
+      (event) => {
+        const touch = event.touches[0];
+
+        if (!touch) return;
+
+        mouse.x = touch.clientX;
+        mouse.y = touch.clientY;
+      },
+      { passive: true }
+    );
+
+    canvas.addEventListener("touchend", () => {
+      mouse.active = false;
+    });
+
+    window.addEventListener("resize", resizeCanvas);
+
+    resizeCanvas();
+    animate();
+
+    setTimeout(() => {
+      createExplosion(
+        width / 2,
+        height / 2
+      );
+    }, 1500);
+  </script>
+
+</body>
+</html>
